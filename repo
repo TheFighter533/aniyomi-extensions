@@ -1,0 +1,63 @@
+src/en/
+└── manhwaread/
+    ├── ManhwaRead.kt
+    └── build.gradle
+package eu.kanade.tachiyomi.extension.en.manhwaread
+
+import eu.kanade.tachiyomi.source.model.SManga
+import eu.kanade.tachiyomi.source.model.SChapter
+import eu.kanade.tachiyomi.source.online.ParsedHttpSource
+import org.jsoup.nodes.Document
+import org.jsoup.nodes.Element
+
+class ManhwaRead : ParsedHttpSource() {
+
+    override val name = "ManhwaRead"
+    override val baseUrl = "https://manhwaread.com"
+    override val lang = "en"
+    override val supportsLatest = true
+
+    override fun popularMangaSelector() = "div.bsx"
+    override fun popularMangaRequest(page: Int) =
+        GET("$baseUrl/manga/?page=$page", headers)
+
+    override fun popularMangaFromElement(element: Element): SManga {
+        return SManga.create().apply {
+            title = element.select("a").attr("title")
+            url = element.select("a").attr("href")
+            thumbnail_url = element.select("img").attr("src")
+        }
+    }
+
+    override fun popularMangaNextPageSelector() = "a.next"
+
+    override fun chapterListSelector() = "ul.cl li"
+    override fun chapterFromElement(element: Element): SChapter {
+        return SChapter.create().apply {
+            name = element.select("a").text()
+            url = element.select("a").attr("href")
+        }
+    }
+
+    override fun pageListSelector() = "div.reading-content img"
+    override fun imageUrlFromElement(element: Element) =
+        element.attr("src")
+
+    override fun mangaDetailsParse(document: Document): SManga {
+        return SManga.create().apply {
+            title = document.select("h1").text()
+            description = document.select("div.desc").text()
+            genre = document.select("div.genres a")
+                .joinToString { it.text() }
+            thumbnail_url = document.select("img").attr("src")
+        }
+    }
+}
+ext {
+    extName = 'ManhwaRead'
+    pkgNameSuffix = 'en.manhwaread'
+    extClass = '.ManhwaRead'
+    extVersionCode = 1
+}
+
+apply from: "$rootDir/common.gradle"
